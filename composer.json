@@ -1,0 +1,11 @@
+{
+	"name": "bulios/api-core",
+	"require": {
+		"php": ">=8.2"
+	},
+	"autoload": {
+		"psr-4": {
+			"Api\\Core\\": "src"
+		}
+	}
+}
