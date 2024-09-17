@@ -21,7 +21,19 @@ final class InvalidRequestException extends Exception
 	 */
 	public function toPayload(ErrorMapping $mapping): array
 	{
-		return $mapping->render($this->response->toArray());
+		return $mapping->render($this->response->toArray(false));
+	}
+
+	public static function create(ResponseInterface $response): InvalidRequestException|UnrecoverableRequestException
+	{
+		$headers = $response->getHeaders(false);
+		$contentType = $headers['content-type'] ?? [];
+
+		if (in_array('application/json', $contentType, true)) {
+			return new InvalidRequestException($response);
+		}
+
+		return new UnrecoverableRequestException($response);
 	}
 
 }
