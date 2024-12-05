@@ -8,6 +8,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 abstract class Service
 {
 
+	private ?string $language = null;
+
 	protected readonly HttpClientInterface $httpClient;
 
 	public function __construct(
@@ -18,14 +20,33 @@ abstract class Service
 		$this->httpClient = $httpClient ?? HttpClient::create();
 	}
 
+	public function withLanguage(?string $language = null): static
+	{
+		$clone = clone $this;
+		$clone->language = $language;
+
+		return $clone;
+	}
+
 	/**
 	 * @param array<string, scalar|null> $params
 	 * @param array<string, string> $headers
 	 */
 	protected function requestJson(RequestType $method, mixed $data, string $path, array $params = [], array $headers = []): ServiceRequest
 	{
-		return new ServiceRequest($this->httpClient, $method, $this->buildUrl($path, $params), [
+		return $this->createRequest($method, $this->buildUrl($path, $params), [
 			'json' => $data,
+		], $headers);
+	}
+
+	/**
+	 * @param array<string, scalar|null> $params
+	 * @param array<string, string> $headers
+	 */
+	protected function requestBody(RequestType $method, string $body, string $path, array $params = [], array $headers = []): ServiceRequest
+	{
+		return $this->createRequest($method, $this->buildUrl($path, $params), [
+			'body' => $body,
 		], $headers);
 	}
 
@@ -35,7 +56,7 @@ abstract class Service
 	 */
 	protected function requestGet(string $path, array $params = [], array $headers = []): ServiceRequest
 	{
-		return new ServiceRequest($this->httpClient, RequestType::Get, $this->buildUrl($path, $params), [], $headers);
+		return $this->createRequest(RequestType::Get, $this->buildUrl($path, $params), [], $headers);
 	}
 
 	/**
@@ -50,6 +71,24 @@ abstract class Service
 		}
 
 		return $url;
+	}
+
+	/**
+	 * @param array<string, mixed> $options
+	 * @param array<string, string> $headers
+	 */
+	private function createRequest(
+		RequestType $method,
+		string $url,
+		array $options = [],
+		array $headers = [],
+	): ServiceRequest
+	{
+		if ($this->language) {
+			$headers['x-language'] = $this->language;
+		}
+
+		return new ServiceRequest($this->httpClient, $method, $url, $options, $headers);
 	}
 
 }
